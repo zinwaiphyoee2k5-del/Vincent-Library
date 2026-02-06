@@ -1,62 +1,113 @@
-/* =========================================================== */
-/* FILE: script.js - JavaScript Functions                     */
-/* PURPOSE: Handles form submission on Contact page           */
-/* FEATURES: Form validation, success message, form reset     */
-/* =========================================================== */
+/* ============================================
+   Vincent Gallery - Contact Form Handler
+   ============================================ */
 
-// Wait for the entire page to finish loading before running code
+// Wait for page to load
 document.addEventListener('DOMContentLoaded', function() {
-    // ==================== CONTACT FORM HANDLING ====================
-    // This code only runs on the Contact page where the form exists
     
-    // Find the contact form by its ID (id="contactForm" in HTML)
+    // Find the contact form
     const contactForm = document.getElementById('contactForm');
     
-    // Check if the form exists on this page
+    // Only run if form exists (on Contact page)
     if (contactForm) {
-        // ========== FORM SUBMISSION EVENT ==========
-        // Listen for when user submits the form (clicks "SEND MASSAGE" button)
-        contactForm.addEventListener('submit', function(event) {
+        
+        // Listen for form submission
+        contactForm.addEventListener('submit', async function(event) {
             
-            // Prevent the default form behavior (page refresh)
+            // Stop page from refreshing
             event.preventDefault();
             
-            // ========== GET FORM DATA ==========
-            // Get values from all three form fields
-            const name = document.getElementById('name').value;
-            const email = document.getElementById('email').value;
-            const message = document.getElementById('message').value;
+            // Get values from form
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const message = document.getElementById('message').value.trim();
             
-            // ========== FORM VALIDATION ==========
-            // Check if any field is empty
+            // ===== VALIDATION =====
             if (!name || !email || !message) {
-                // Show error message if any field is empty
                 alert('Please fill in all fields.');
-                return; // Stop execution here
+                return;
             }
             
-            // ========== FORM SUBMISSION (Simulated) ==========
-            // In a real website, you would send data to a server here
-            // For this project, we just log it to the console
-            console.log('Form submitted:', { 
-                name: name, 
-                email: email, 
-                message: message 
-            });
+            if (!validateEmail(email)) {
+                alert('Please enter a valid email address.');
+                return;
+            }
             
-            // ========== SUCCESS MESSAGE ==========
-            // Show confirmation message to user
-            alert('Thank you for your message! We will get back to you soon.');
+            // ===== PREPARE FOR API CALL =====
+            const submitBtn = contactForm.querySelector('.submit-btn');
+            const originalText = submitBtn.textContent;
             
-            // ========== FORM RESET ==========
-            // Clear all form fields after successful submission
-            contactForm.reset();
+            // Show loading state
+            submitBtn.textContent = 'Sending...';
+            submitBtn.disabled = true;
+            
+            // ===== API CALL =====
+            try {
+                // 🎯 TEST API URL (WORKS IMMEDIATELY)
+                const API_URL = 'https://jsonplaceholder.typicode.com/posts';
+                
+                // Data to send
+                const formData = {
+                    name: name,
+                    email: email,
+                    message: message,
+                    website: 'Vincent Gallery',
+                    timestamp: new Date().toISOString()
+                };
+                
+                console.log('📤 Sending to API:', formData);
+                
+                // Send to API
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                // Check if successful
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('✅ API Response:', result);
+                    
+                    // Success message
+                   alert('✅ Thank you! Your message has been received.');
+                    // Clear form
+                    contactForm.reset();
+                    
+                } else {
+                    // API returned error
+                    throw new Error(`Server error: ${response.status}`);
+                }
+                
+            } catch (error) {
+                // ===== FALLBACK IF API FAILS =====
+                console.error('API Error:', error);
+                console.log('📝 Form Data (not sent):', {
+                    name: name,
+                    email: email,
+                    message: message
+                });
+                
+                // User-friendly message
+                alert('📝 Demo Mode: Form submitted successfully!\n\nIn a real website, this would be sent to:\n1. Formspree.io (free)\n2. Or your own server\n\nData logged to console.');
+                
+                // Still clear form
+                contactForm.reset();
+                
+            } finally {
+                // ===== CLEANUP =====
+                // Always reset button
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
         });
     }
     
-    // ========== NOTE ABOUT NAVIGATION ==========
-    // Navigation between pages works automatically with HTML links
-    // No JavaScript is needed for basic page navigation
-    // The CSS handles active page highlighting with the .active class
-    
+    // ===== EMAIL VALIDATION FUNCTION =====
+    function validateEmail(email) {
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return re.test(email);
+    }
 });
